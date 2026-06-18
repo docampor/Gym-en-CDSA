@@ -26,7 +26,6 @@ import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { BenchPressDemo } from "@/components/ExerciseDemoAnimation";
 
 export const Route = createFileRoute("/ejercicios")({
   head: () => ({
@@ -87,8 +86,6 @@ function EjerciciosPage() {
           </SelectContent>
         </Select>
       </div>
-
-      <BenchPressDemo />
 
       {lista.length === 0 ? (
         <Card className="p-8 text-center text-muted-foreground">
