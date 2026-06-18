@@ -19,7 +19,7 @@ const nav = [
   { to: "/ajustes", label: "Ajustes", icon: Settings },
 ];
 
-const logoSrc = `${import.meta.env.BASE_URL}cdsa-logo.png`;
+const logoSrc = `${import.meta.env.BASE_URL}cdsa-logo.svg`;
 
 export function AppLayout({ children }: { children: ReactNode }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
@@ -33,7 +33,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
             <img
               src={logoSrc}
               alt="CDSA"
-              className="h-16 w-auto rounded-md object-contain"
+              className="h-24 w-auto rounded-md object-contain"
             />
           </Link>
         </div>
@@ -68,7 +68,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
           <img
             src={logoSrc}
             alt="CDSA"
-            className="h-10 w-auto rounded object-contain"
+            className="h-12 w-auto rounded object-contain"
           />
         </Link>
       </header>

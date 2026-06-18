@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title">
+  <title id="title">CDSA Gym +50</title>
+  <rect width="512" height="512" fill="#17793c" />
+  <path
+    d="M156 58c31 17 66 25 101 25s70-8 101-25c31 34 52 73 63 118-12 82-65 148-165 188C156 324 103 258 91 176c11-45 34-84 65-118Z"
+    fill="none"
+    stroke="#fff"
+    stroke-width="14"
+    stroke-linejoin="round"
+  />
+  <path
+    d="M125 286 384 112"
+    fill="none"
+    stroke="#fff"
+    stroke-width="9"
+    stroke-linecap="round"
+  />
+  <text
+    x="253"
+    y="230"
+    fill="#fff"
+    font-family="Arial, Helvetica, sans-serif"
+    font-size="82"
+    font-weight="800"
+    text-anchor="middle"
+    transform="rotate(-34 253 230)"
+  >
+    CDSA
+  </text>
+  <text
+    x="256"
+    y="442"
+    fill="#fff"
+    font-family="Arial, Helvetica, sans-serif"
+    font-size="72"
+    font-weight="800"
+    text-anchor="middle"
+  >
+    Gym +50
+  </text>
+</svg>
