@@ -19,7 +19,7 @@ const nav = [
   { to: "/ajustes", label: "Ajustes", icon: Settings },
 ];
 
-const logoSrc = `${import.meta.env.BASE_URL}cdsa-logo.svg`;
+const logoSrc = `${import.meta.env.BASE_URL}cdsa-logo.png`;
 
 export function AppLayout({ children }: { children: ReactNode }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
