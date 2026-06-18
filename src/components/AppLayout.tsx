@@ -19,6 +19,8 @@ const nav = [
   { to: "/ajustes", label: "Ajustes", icon: Settings },
 ];
 
+const logoSrc = `${import.meta.env.BASE_URL}cdsa-logo.png`;
+
 export function AppLayout({ children }: { children: ReactNode }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
@@ -27,12 +29,13 @@ export function AppLayout({ children }: { children: ReactNode }) {
       {/* Desktop sidebar */}
       <aside className="hidden lg:flex fixed inset-y-0 left-0 w-60 flex-col border-r border-border bg-sidebar">
         <div className="px-6 py-6">
-          <div className="flex items-center gap-2">
-            <div className="grid h-9 w-9 place-items-center rounded-lg bg-primary text-primary-foreground">
-              <Dumbbell className="h-5 w-5" />
-            </div>
-            <div className="font-display text-xl font-bold tracking-wide">GYM<span className="text-primary">TRACK</span></div>
-          </div>
+          <Link to="/" className="inline-flex items-center">
+            <img
+              src={logoSrc}
+              alt="CDSA"
+              className="h-16 w-auto rounded-md object-contain"
+            />
+          </Link>
         </div>
         <nav className="flex-1 px-3 space-y-1">
           {nav.map((n) => {
@@ -61,14 +64,13 @@ export function AppLayout({ children }: { children: ReactNode }) {
 
       {/* Mobile top bar */}
       <header className="lg:hidden sticky top-0 z-30 flex items-center justify-between border-b border-border bg-background/90 backdrop-blur px-4 py-3">
-        <div className="flex items-center gap-2">
-          <div className="grid h-8 w-8 place-items-center rounded-md bg-primary text-primary-foreground">
-            <Dumbbell className="h-4 w-4" />
-          </div>
-          <span className="font-display text-lg font-bold tracking-wide">
-            GYM<span className="text-primary">TRACK</span>
-          </span>
-        </div>
+        <Link to="/" className="inline-flex items-center">
+          <img
+            src={logoSrc}
+            alt="CDSA"
+            className="h-10 w-auto rounded object-contain"
+          />
+        </Link>
       </header>
 
       {/* Main */}
