@@ -25,7 +25,7 @@ const search = z.object({
 
 export const Route = createFileRoute("/entrenar")({
   validateSearch: search,
-  head: () => ({ meta: [{ title: "Entrenar — Gym Tracker" }] }),
+  head: () => ({ meta: [{ title: "Gym CDSA" }] }),
   component: EntrenarPage,
 });
 

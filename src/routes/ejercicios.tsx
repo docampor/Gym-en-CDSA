@@ -29,7 +29,7 @@ import { es } from "date-fns/locale";
 
 export const Route = createFileRoute("/ejercicios")({
   head: () => ({
-    meta: [{ title: "Ejercicios — Gym Tracker" }],
+    meta: [{ title: "Gym CDSA" }],
   }),
   component: EjerciciosPage,
 });

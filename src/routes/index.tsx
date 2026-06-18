@@ -21,7 +21,7 @@ import { Button } from "@/components/ui/button";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Inicio — Gym Tracker" },
+      { title: "Gym CDSA" },
       { name: "description", content: "Resumen de entrenamientos, volumen y progreso." },
     ],
   }),

@@ -27,7 +27,7 @@ import {
 
 export const Route = createFileRoute("/rutinas")({
   head: () => ({
-    meta: [{ title: "Rutinas — Gym Tracker" }],
+    meta: [{ title: "Gym CDSA" }],
   }),
   component: RutinasPage,
 });

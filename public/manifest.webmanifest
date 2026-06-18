@@ -1,6 +1,6 @@
 {
-  "name": "Gym Tracker",
-  "short_name": "GymTracker",
+  "name": "Gym CDSA",
+  "short_name": "Gym CDSA",
   "description": "Gestor de entrenamiento de gimnasio offline",
   "start_url": "/Gym-en-CDSA/",
   "scope": "/Gym-en-CDSA/",

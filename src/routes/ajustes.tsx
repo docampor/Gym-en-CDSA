@@ -8,7 +8,7 @@ import { useRef } from "react";
 import { useLiveQuery } from "@/lib/hooks";
 
 export const Route = createFileRoute("/ajustes")({
-  head: () => ({ meta: [{ title: "Ajustes — Gym Tracker" }] }),
+  head: () => ({ meta: [{ title: "Gym CDSA" }] }),
   component: AjustesPage,
 });
 

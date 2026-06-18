@@ -14,7 +14,7 @@ import { es } from "date-fns/locale";
 import { Plus, Trash2, Scale, HeartPulse, Moon } from "lucide-react";
 
 export const Route = createFileRoute("/salud")({
-  head: () => ({ meta: [{ title: "Salud — Gym Tracker" }] }),
+  head: () => ({ meta: [{ title: "Gym CDSA" }] }),
   component: SaludPage,
 });
 
