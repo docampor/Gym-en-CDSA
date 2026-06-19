@@ -34,12 +34,34 @@ export type RegistroEjercicio = {
   series: Serie[];
 };
 
+export type TipoActividad = "gimnasio" | "natacion" | "bici";
+
+export type ActividadNatacion = {
+  distanciaM: number;
+  duracionMin: number;
+  estilo?: string;
+  piletaM?: number;
+  intensidad?: string;
+};
+
+export type ActividadBici = {
+  distanciaKm: number;
+  duracionMin: number;
+  desnivelM?: number;
+  fcPromedio?: number;
+  modalidad?: string;
+  intensidad?: string;
+};
+
 export type Entrenamiento = {
   id?: number;
   fecha: number; // timestamp
+  tipo?: TipoActividad;
   rutinaId?: number;
   rutinaNombre?: string;
   registros: RegistroEjercicio[];
+  natacion?: ActividadNatacion;
+  bici?: ActividadBici;
   notas?: string;
 };
 
@@ -65,8 +87,18 @@ export type RegistroSueno = {
 
 export type Ajuste = {
   clave: string;
-  valor: any;
+  valor: unknown;
 };
+
+type BackupData = Partial<{
+  ejercicios: Ejercicio[];
+  rutinas: Rutina[];
+  entrenamientos: Entrenamiento[];
+  pesos: RegistroPeso[];
+  presiones: RegistroPresion[];
+  suenos: RegistroSueno[];
+  ajustes: Ajuste[];
+}>;
 
 class GymDB extends Dexie {
   ejercicios!: Table<Ejercicio, number>;
@@ -93,24 +125,25 @@ class GymDB extends Dexie {
 
 export const db = new GymDB();
 
-export async function getAjuste<T = any>(clave: string, def: T): Promise<T> {
+export async function getAjuste<T = unknown>(clave: string, def: T): Promise<T> {
   const a = await db.ajustes.get(clave);
   return (a?.valor as T) ?? def;
 }
-export async function setAjuste(clave: string, valor: any) {
+export async function setAjuste(clave: string, valor: unknown) {
   await db.ajustes.put({ clave, valor });
 }
 
 export async function exportarTodo() {
-  const [ejercicios, rutinas, entrenamientos, pesos, presiones, suenos, ajustes] = await Promise.all([
-    db.ejercicios.toArray(),
-    db.rutinas.toArray(),
-    db.entrenamientos.toArray(),
-    db.pesos.toArray(),
-    db.presiones.toArray(),
-    db.suenos.toArray(),
-    db.ajustes.toArray(),
-  ]);
+  const [ejercicios, rutinas, entrenamientos, pesos, presiones, suenos, ajustes] =
+    await Promise.all([
+      db.ejercicios.toArray(),
+      db.rutinas.toArray(),
+      db.entrenamientos.toArray(),
+      db.pesos.toArray(),
+      db.presiones.toArray(),
+      db.suenos.toArray(),
+      db.ajustes.toArray(),
+    ]);
   return {
     version: 1,
     exportadoEn: Date.now(),
@@ -124,7 +157,7 @@ export async function exportarTodo() {
   };
 }
 
-export async function importarTodo(data: any) {
+export async function importarTodo(data: BackupData) {
   await db.transaction(
     "rw",
     [db.ejercicios, db.rutinas, db.entrenamientos, db.pesos, db.presiones, db.suenos, db.ajustes],
@@ -154,10 +187,44 @@ export function volumenSerie(s: Serie) {
 }
 
 export function volumenEntrenamiento(e: Entrenamiento) {
-  return e.registros.reduce(
+  return (e.registros ?? []).reduce(
     (acc, r) => acc + r.series.reduce((a, s) => a + volumenSerie(s), 0),
     0,
   );
+}
+
+export function tipoEntrenamiento(e: Entrenamiento): TipoActividad {
+  return e.tipo ?? "gimnasio";
+}
+
+export function tituloEntrenamiento(e: Entrenamiento) {
+  const tipo = tipoEntrenamiento(e);
+  if (tipo === "natacion") return "Natacion";
+  if (tipo === "bici") return "Bici";
+  return e.rutinaNombre || "Sesion libre";
+}
+
+export function resumenEntrenamiento(e: Entrenamiento) {
+  const tipo = tipoEntrenamiento(e);
+  if (tipo === "natacion") {
+    const n = e.natacion;
+    if (!n) return "Natacion";
+    const ritmo =
+      n.distanciaM > 0 && n.duracionMin > 0
+        ? ` · ${((n.duracionMin * 100) / n.distanciaM).toFixed(1)} min/100m`
+        : "";
+    return `${n.distanciaM} m · ${n.duracionMin} min${ritmo}`;
+  }
+  if (tipo === "bici") {
+    const b = e.bici;
+    if (!b) return "Bici";
+    const velocidad =
+      b.distanciaKm > 0 && b.duracionMin > 0
+        ? ` · ${((b.distanciaKm / b.duracionMin) * 60).toFixed(1)} km/h`
+        : "";
+    return `${b.distanciaKm} km · ${b.duracionMin} min${velocidad}`;
+  }
+  return `${e.registros?.length ?? 0} ejercicios`;
 }
 
 export const GRUPOS_MUSCULARES = [

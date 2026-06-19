@@ -1,6 +1,17 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useLiveQuery } from "@/lib/hooks";
-import { db, volumenEntrenamiento } from "@/lib/db";
+import {
+  db,
+  resumenEntrenamiento,
+  tipoEntrenamiento,
+  tituloEntrenamiento,
+  volumenEntrenamiento,
+  type Ejercicio,
+  type Entrenamiento,
+  type RegistroEjercicio,
+  type Serie,
+  type TipoActividad,
+} from "@/lib/db";
 import { Card } from "@/components/ui/card";
 import {
   LineChart,
@@ -13,9 +24,9 @@ import {
   BarChart,
   Bar,
 } from "recharts";
-import { format, startOfWeek, startOfMonth, subDays } from "date-fns";
+import { format, startOfWeek, subDays } from "date-fns";
 import { es } from "date-fns/locale";
-import { Play, TrendingUp, Calendar, Flame } from "lucide-react";
+import { Play, Calendar, Bike, Waves, Dumbbell } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/")({
@@ -53,6 +64,18 @@ function Metric({
   );
 }
 
+const activityLabel: Record<TipoActividad, string> = {
+  gimnasio: "Gimnasio",
+  natacion: "Natacion",
+  bici: "Bici",
+};
+
+const activityBadge: Record<TipoActividad, string> = {
+  gimnasio: "border-primary/30 bg-primary/15 text-primary",
+  natacion: "border-cyan-400/30 bg-cyan-400/15 text-cyan-300",
+  bici: "border-emerald-400/30 bg-emerald-400/15 text-emerald-300",
+};
+
 function Dashboard() {
   const entrenamientos = useLiveQuery(
     () => db.entrenamientos.orderBy("fecha").reverse().toArray(),
@@ -66,25 +89,30 @@ function Dashboard() {
 
   const ahora = Date.now();
   const inicioSemana = startOfWeek(ahora, { weekStartsOn: 1 }).getTime();
-  const inicioMes = startOfMonth(ahora).getTime();
-
-  const volSemana = entrenamientos
-    .filter((e) => e.fecha >= inicioSemana)
+  const entrenamientosSemana = entrenamientos.filter((e) => e.fecha >= inicioSemana);
+  const volSemana = entrenamientosSemana
+    .filter((e) => tipoEntrenamiento(e) === "gimnasio")
     .reduce((a, e) => a + volumenEntrenamiento(e), 0);
-  const volMes = entrenamientos
-    .filter((e) => e.fecha >= inicioMes)
-    .reduce((a, e) => a + volumenEntrenamiento(e), 0);
-  const sesionesSemana = entrenamientos.filter((e) => e.fecha >= inicioSemana).length;
+  const sesionesSemana = entrenamientosSemana.length;
+  const natacionSemana = entrenamientosSemana
+    .filter((e) => tipoEntrenamiento(e) === "natacion")
+    .reduce((a, e) => a + (e.natacion?.distanciaM ?? 0), 0);
+  const biciSemana = entrenamientosSemana
+    .filter((e) => tipoEntrenamiento(e) === "bici")
+    .reduce((a, e) => a + (e.bici?.distanciaKm ?? 0), 0);
 
   // Volumen últimos 14 días
   const dias = Array.from({ length: 14 }).map((_, i) => {
     const d = subDays(new Date(), 13 - i);
     const key = format(d, "yyyy-MM-dd");
     const label = format(d, "dd/MM", { locale: es });
-    const vol = entrenamientos
-      .filter((e) => format(new Date(e.fecha), "yyyy-MM-dd") === key)
-      .reduce((a, e) => a + volumenEntrenamiento(e), 0);
-    return { dia: label, volumen: Math.round(vol) };
+    const delDia = entrenamientos.filter((e) => format(new Date(e.fecha), "yyyy-MM-dd") === key);
+    return {
+      dia: label,
+      gimnasio: delDia.filter((e) => tipoEntrenamiento(e) === "gimnasio").length,
+      natacion: delDia.filter((e) => tipoEntrenamiento(e) === "natacion").length,
+      bici: delDia.filter((e) => tipoEntrenamiento(e) === "bici").length,
+    };
   });
 
   const ejMap = new Map(ejercicios.map((e) => [e.id!, e]));
@@ -104,16 +132,35 @@ function Dashboard() {
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <Metric label="Volumen semanal" value={Math.round(volSemana).toLocaleString("es")} unit="kg" icon={<TrendingUp className="h-4 w-4 text-primary" />} />
-        <Metric label="Volumen mensual" value={Math.round(volMes).toLocaleString("es")} unit="kg" icon={<Flame className="h-4 w-4 text-warning" />} />
-        <Metric label="Sesiones semana" value={sesionesSemana} icon={<Calendar className="h-4 w-4 text-success" />} />
-        <Metric label="Total sesiones" value={entrenamientos.length} />
+        <Metric
+          label="Gimnasio semana"
+          value={Math.round(volSemana).toLocaleString("es")}
+          unit="kg"
+          icon={<Dumbbell className="h-4 w-4 text-primary" />}
+        />
+        <Metric
+          label="Natacion semana"
+          value={Math.round(natacionSemana).toLocaleString("es")}
+          unit="m"
+          icon={<Waves className="h-4 w-4 text-cyan-300" />}
+        />
+        <Metric
+          label="Bici semana"
+          value={biciSemana.toFixed(1)}
+          unit="km"
+          icon={<Bike className="h-4 w-4 text-emerald-300" />}
+        />
+        <Metric
+          label="Sesiones semana"
+          value={sesionesSemana}
+          icon={<Calendar className="h-4 w-4 text-success" />}
+        />
       </div>
 
       <Card className="p-4">
         <div className="mb-2 flex items-center justify-between">
-          <h2 className="font-semibold">Volumen — últimos 14 días</h2>
-          <span className="text-xs text-muted-foreground">kg</span>
+          <h2 className="font-semibold">Actividades — ultimos 14 dias</h2>
+          <span className="text-xs text-muted-foreground">sesiones</span>
         </div>
         <div className="h-56">
           <ResponsiveContainer width="100%" height="100%">
@@ -128,7 +175,14 @@ function Dashboard() {
                   borderRadius: 8,
                 }}
               />
-              <Bar dataKey="volumen" fill="var(--color-primary)" radius={[4, 4, 0, 0]} />
+              <Bar
+                dataKey="gimnasio"
+                stackId="a"
+                fill="var(--color-primary)"
+                radius={[4, 4, 0, 0]}
+              />
+              <Bar dataKey="natacion" stackId="a" fill="#22d3ee" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="bici" stackId="a" fill="#34d399" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -140,23 +194,38 @@ function Dashboard() {
           <p className="text-sm text-muted-foreground">Aún no registraste entrenamientos.</p>
         ) : (
           <ul className="space-y-2">
-            {entrenamientos.slice(0, 5).map((e) => (
-              <li key={e.id} className="flex items-center justify-between rounded-lg bg-muted/40 px-3 py-2">
-                <div>
-                  <div className="font-medium">{e.rutinaNombre || "Sesión libre"}</div>
-                  <div className="text-xs text-muted-foreground">
-                    {format(new Date(e.fecha), "EEE d MMM, HH:mm", { locale: es })} ·{" "}
-                    {e.registros.length} ejercicios
+            {entrenamientos.slice(0, 5).map((e) => {
+              const tipo = tipoEntrenamiento(e);
+              return (
+                <li
+                  key={e.id}
+                  className="flex items-center justify-between gap-3 rounded-lg bg-muted/40 px-3 py-2"
+                >
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="font-medium">{tituloEntrenamiento(e)}</span>
+                      <span
+                        className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase ${activityBadge[tipo]}`}
+                      >
+                        {activityLabel[tipo]}
+                      </span>
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      {format(new Date(e.fecha), "EEE d MMM, HH:mm", { locale: es })} ·{" "}
+                      {resumenEntrenamiento(e)}
+                    </div>
                   </div>
-                </div>
-                <div className="text-right">
-                  <div className="metric-value text-lg">
-                    {Math.round(volumenEntrenamiento(e)).toLocaleString("es")}
-                  </div>
-                  <div className="text-[10px] text-muted-foreground">kg vol.</div>
-                </div>
-              </li>
-            ))}
+                  {tipo === "gimnasio" && (
+                    <div className="text-right">
+                      <div className="metric-value text-lg">
+                        {Math.round(volumenEntrenamiento(e)).toLocaleString("es")}
+                      </div>
+                      <div className="text-[10px] text-muted-foreground">kg vol.</div>
+                    </div>
+                  )}
+                </li>
+              );
+            })}
           </ul>
         )}
       </Card>
@@ -170,13 +239,15 @@ function EvolucionCargas({
   entrenamientos,
   ejMap,
 }: {
-  entrenamientos: any[];
-  ejMap: Map<number, any>;
+  entrenamientos: Entrenamiento[];
+  ejMap: Map<number, Ejercicio>;
 }) {
   // Tomar el ejercicio con más historial
   const counts = new Map<number, number>();
   entrenamientos.forEach((e) =>
-    e.registros.forEach((r: any) => counts.set(r.ejercicioId, (counts.get(r.ejercicioId) ?? 0) + 1)),
+    (e.registros ?? []).forEach((r: RegistroEjercicio) =>
+      counts.set(r.ejercicioId, (counts.get(r.ejercicioId) ?? 0) + 1),
+    ),
   );
   let topId: number | undefined;
   let max = 0;
@@ -192,15 +263,15 @@ function EvolucionCargas({
     .slice()
     .reverse()
     .map((e) => {
-      const reg = e.registros.find((r: any) => r.ejercicioId === topId);
+      const reg = e.registros?.find((r: RegistroEjercicio) => r.ejercicioId === topId);
       if (!reg) return null;
-      const maxPeso = Math.max(...reg.series.map((s: any) => s.peso || 0));
+      const maxPeso = Math.max(...reg.series.map((s: Serie) => s.peso || 0));
       return {
         fecha: format(new Date(e.fecha), "dd/MM"),
         peso: maxPeso,
       };
     })
-    .filter(Boolean) as any[];
+    .filter((item): item is { fecha: string; peso: number } => item !== null);
 
   return (
     <Card className="p-4">
@@ -221,7 +292,13 @@ function EvolucionCargas({
                 borderRadius: 8,
               }}
             />
-            <Line type="monotone" dataKey="peso" stroke="var(--color-primary)" strokeWidth={2} dot={{ r: 3 }} />
+            <Line
+              type="monotone"
+              dataKey="peso"
+              stroke="var(--color-primary)"
+              strokeWidth={2}
+              dot={{ r: 3 }}
+            />
           </LineChart>
         </ResponsiveContainer>
       </div>
