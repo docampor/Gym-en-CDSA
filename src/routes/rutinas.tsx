@@ -14,9 +14,10 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Plus, Pencil, Trash2, ListChecks, Star, ChevronUp, ChevronDown, X, Play } from "lucide-react";
-import { useState } from "react";
+import { Plus, Pencil, Trash2, ListChecks, Star, ChevronUp, ChevronDown, X, Play, Download, Upload } from "lucide-react";
+import { useRef, useState } from "react";
 import { toast } from "sonner";
+import * as XLSX from "xlsx";
 import {
   Select,
   SelectContent,
@@ -37,27 +38,59 @@ function RutinasPage() {
   const ejercicios = useLiveQuery(() => db.ejercicios.orderBy("nombre").toArray(), []);
   const [abierto, setAbierto] = useState(false);
   const [editar, setEditar] = useState<Rutina | null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
+  const rutinasActuales = rutinas ?? [];
+  const ejerciciosActuales = ejercicios ?? [];
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold">Rutinas</h1>
           <p className="text-sm text-muted-foreground">Organizá tus planes de entrenamiento</p>
         </div>
-        <Dialog open={abierto} onOpenChange={(v) => { setAbierto(v); if (!v) setEditar(null); }}>
-          <DialogTrigger asChild>
-            <Button onClick={() => setEditar(null)}>
-              <Plus className="h-4 w-4 mr-1" /> Nueva
-            </Button>
-          </DialogTrigger>
-          <RutinaDialog
-            editar={editar}
-            ejercicios={ejercicios ?? []}
-            onClose={() => { setAbierto(false); setEditar(null); }}
+        <div className="flex flex-wrap gap-2">
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={() => exportarRutinasExcel(rutinasActuales, ejerciciosActuales)}
+          >
+            <Download className="h-4 w-4 mr-1" /> Excel
+          </Button>
+          <Button type="button" variant="secondary" onClick={() => fileRef.current?.click()}>
+            <Upload className="h-4 w-4 mr-1" /> Importar
+          </Button>
+          <input
+            ref={fileRef}
+            type="file"
+            accept=".xlsx,.xls"
+            className="hidden"
+            onChange={async (e) => {
+              const file = e.target.files?.[0];
+              e.target.value = "";
+              if (file) {
+                await importarRutinasExcel(file, rutinasActuales, ejerciciosActuales);
+              }
+            }}
           />
-        </Dialog>
+          <Dialog open={abierto} onOpenChange={(v) => { setAbierto(v); if (!v) setEditar(null); }}>
+            <DialogTrigger asChild>
+              <Button onClick={() => setEditar(null)}>
+                <Plus className="h-4 w-4 mr-1" /> Nueva
+              </Button>
+            </DialogTrigger>
+            <RutinaDialog
+              editar={editar}
+              ejercicios={ejerciciosActuales}
+              onClose={() => { setAbierto(false); setEditar(null); }}
+            />
+          </Dialog>
+        </div>
       </div>
+
+      <Card className="p-3 text-xs text-muted-foreground">
+        Para importar rutinas desde Excel, los ejercicios deben existir antes en la app. Usa el nombre exacto del ejercicio cargado.
+      </Card>
 
       {!rutinas || rutinas.length === 0 ? (
         <Card className="p-8 text-center text-muted-foreground">
@@ -127,6 +160,220 @@ function RutinasPage() {
       )}
     </div>
   );
+}
+
+const RUTINAS_HEADERS = [
+  "Rutina",
+  "Descripcion",
+  "Activa",
+  "Orden",
+  "Ejercicio",
+  "Descanso (seg)",
+];
+
+type RutinaExcelRow = Record<string, string | number | boolean | null | undefined>;
+
+function normalizeName(value: unknown) {
+  return String(value ?? "")
+    .trim()
+    .normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "")
+    .toLowerCase();
+}
+
+function textValue(value: unknown) {
+  return String(value ?? "").trim();
+}
+
+function numberValue(value: unknown, fallback: number) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+function boolValue(value: unknown) {
+  const normalized = normalizeName(value);
+  return ["si", "s", "true", "1", "x", "activa"].includes(normalized);
+}
+
+function pick(row: RutinaExcelRow, keys: string[]) {
+  const entries = Object.entries(row);
+  for (const key of keys) {
+    const found = entries.find(([rowKey]) => normalizeName(rowKey) === normalizeName(key));
+    if (found) return found[1];
+  }
+  return "";
+}
+
+function exportarRutinasExcel(
+  rutinas: Rutina[],
+  ejercicios: { id?: number; nombre: string; grupo: string; descripcion?: string }[],
+) {
+  const ejercicioMap = new Map(ejercicios.map((e) => [e.id, e]));
+  const rows = rutinas.flatMap((rutina) => {
+    const base = {
+      Rutina: rutina.nombre,
+      Descripcion: rutina.descripcion ?? "",
+      Activa: rutina.activa ? "Si" : "",
+    };
+
+    if (rutina.ejercicios.length === 0) {
+      return [{ ...base, Orden: "", Ejercicio: "", "Descanso (seg)": "" }];
+    }
+
+    return [...rutina.ejercicios]
+      .sort((a, b) => a.orden - b.orden)
+      .map((item, index) => ({
+        ...base,
+        Orden: index + 1,
+        Ejercicio: ejercicioMap.get(item.ejercicioId)?.nombre ?? "",
+        "Descanso (seg)": item.descansoSeg ?? 90,
+      }));
+  });
+
+  const worksheet = XLSX.utils.json_to_sheet(rows.length ? rows : [], { header: RUTINAS_HEADERS });
+  worksheet["!cols"] = [
+    { wch: 28 },
+    { wch: 34 },
+    { wch: 10 },
+    { wch: 8 },
+    { wch: 34 },
+    { wch: 14 },
+  ];
+
+  const ejerciciosSheet = XLSX.utils.json_to_sheet(
+    ejercicios.map((e) => ({
+      Ejercicio: e.nombre,
+      Grupo: e.grupo,
+      Descripcion: e.descripcion ?? "",
+    })),
+    { header: ["Ejercicio", "Grupo", "Descripcion"] },
+  );
+  ejerciciosSheet["!cols"] = [{ wch: 34 }, { wch: 18 }, { wch: 40 }];
+
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, "Rutinas");
+  XLSX.utils.book_append_sheet(workbook, ejerciciosSheet, "Ejercicios cargados");
+  XLSX.writeFile(workbook, `rutinas-gym-cdsa-${new Date().toISOString().slice(0, 10)}.xlsx`);
+  toast.success("Excel de rutinas descargado");
+}
+
+async function importarRutinasExcel(
+  file: File,
+  rutinas: Rutina[],
+  ejercicios: { id?: number; nombre: string }[],
+) {
+  if (ejercicios.length === 0) {
+    toast.error("Primero carga ejercicios en la app");
+    return;
+  }
+
+  try {
+    const workbook = XLSX.read(await file.arrayBuffer(), { type: "array" });
+    const sheetName = workbook.SheetNames.includes("Rutinas") ? "Rutinas" : workbook.SheetNames[0];
+    const sheet = sheetName ? workbook.Sheets[sheetName] : undefined;
+    if (!sheet) {
+      toast.error("El archivo no tiene una hoja de rutinas");
+      return;
+    }
+
+    const rows = XLSX.utils.sheet_to_json<RutinaExcelRow>(sheet, { defval: "" });
+    const ejerciciosPorNombre = new Map(ejercicios.map((e) => [normalizeName(e.nombre), e]));
+    const rutinasPorNombre = new Map(rutinas.map((r) => [normalizeName(r.nombre), r]));
+    const grupos = new Map<
+      string,
+      {
+        nombre: string;
+        descripcion?: string;
+        activa?: boolean;
+        ejercicios: { ejercicioId: number; orden: number; descansoSeg: number }[];
+      }
+    >();
+    const errores: string[] = [];
+
+    rows.forEach((row, index) => {
+      const fila = index + 2;
+      const nombreRutina = textValue(pick(row, ["Rutina", "Nombre rutina", "Nombre"]));
+      const nombreEjercicio = textValue(pick(row, ["Ejercicio", "Nombre ejercicio"]));
+
+      if (!nombreRutina && !nombreEjercicio) return;
+      if (!nombreRutina) {
+        errores.push(`Fila ${fila}: falta la rutina`);
+        return;
+      }
+      if (!nombreEjercicio) {
+        errores.push(`Fila ${fila}: falta el ejercicio`);
+        return;
+      }
+
+      const ejercicio = ejerciciosPorNombre.get(normalizeName(nombreEjercicio));
+      if (!ejercicio?.id) {
+        errores.push(`Fila ${fila}: "${nombreEjercicio}" no existe en Ejercicios`);
+        return;
+      }
+
+      const key = normalizeName(nombreRutina);
+      const grupo = grupos.get(key) ?? {
+        nombre: nombreRutina,
+        descripcion: textValue(pick(row, ["Descripcion"])),
+        activa: boolValue(pick(row, ["Activa", "Activo"])),
+        ejercicios: [],
+      };
+      const duplicado = grupo.ejercicios.some((item) => item.ejercicioId === ejercicio.id);
+      if (duplicado) {
+        errores.push(`Fila ${fila}: "${nombreEjercicio}" esta repetido en "${nombreRutina}"`);
+        return;
+      }
+
+      const orden = numberValue(pick(row, ["Orden"]), grupo.ejercicios.length + 1);
+      const descansoSeg = numberValue(pick(row, ["Descanso (seg)", "Descanso", "Descanso seg"]), 90);
+      grupo.descripcion ||= textValue(pick(row, ["Descripcion"]));
+      grupo.activa ||= boolValue(pick(row, ["Activa", "Activo"]));
+      grupo.ejercicios.push({ ejercicioId: ejercicio.id, orden, descansoSeg });
+      grupos.set(key, grupo);
+    });
+
+    if (errores.length > 0) {
+      alert(`No se importo nada. Corregi estos datos:\n\n${errores.slice(0, 12).join("\n")}${errores.length > 12 ? `\n...y ${errores.length - 12} mas` : ""}`);
+      toast.error("Excel con ejercicios no cargados o datos incompletos");
+      return;
+    }
+
+    if (grupos.size === 0) {
+      toast.error("No encontre rutinas para importar");
+      return;
+    }
+
+    const activarAlguna = [...grupos.values()].some((grupo) => grupo.activa);
+    await db.transaction("rw", db.rutinas, async () => {
+      if (activarAlguna) {
+        await db.rutinas.toCollection().modify({ activa: false });
+      }
+
+      for (const grupo of grupos.values()) {
+        const ejerciciosOrdenados = grupo.ejercicios
+          .sort((a, b) => a.orden - b.orden)
+          .map((item, index) => ({ ...item, orden: index }));
+        const existente = rutinasPorNombre.get(normalizeName(grupo.nombre));
+        const datos = {
+          nombre: grupo.nombre,
+          descripcion: grupo.descripcion,
+          activa: grupo.activa,
+          ejercicios: ejerciciosOrdenados,
+        };
+
+        if (existente?.id) {
+          await db.rutinas.update(existente.id, datos);
+        } else {
+          await db.rutinas.add({ ...datos, creadaEn: Date.now() });
+        }
+      }
+    });
+
+    toast.success(`${grupos.size} rutina(s) importada(s)`);
+  } catch (error) {
+    console.error(error);
+    toast.error("No pude leer ese archivo Excel");
+  }
 }
 
 function RutinaDialog({
