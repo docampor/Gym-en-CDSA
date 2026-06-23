@@ -22,7 +22,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Plus, Pencil, Trash2, Dumbbell } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
@@ -192,6 +192,12 @@ function EjercicioDialog({
   const [nombre, setNombre] = useState(editar?.nombre ?? "");
   const [grupo, setGrupo] = useState(editar?.grupo ?? "Pecho");
   const [descripcion, setDescripcion] = useState(editar?.descripcion ?? "");
+
+  useEffect(() => {
+    setNombre(editar?.nombre ?? "");
+    setGrupo(editar?.grupo ?? "Pecho");
+    setDescripcion(editar?.descripcion ?? "");
+  }, [editar]);
 
   return (
     <DialogContent>

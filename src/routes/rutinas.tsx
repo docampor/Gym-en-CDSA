@@ -15,7 +15,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Plus, Pencil, Trash2, ListChecks, Star, ChevronUp, ChevronDown, X, Play, Download, Upload } from "lucide-react";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import * as XLSX from "xlsx";
 import {
@@ -450,6 +450,13 @@ function RutinaDialog({
   const [seleccionado, setSeleccionado] = useState<string>("");
 
   const ejMap = new Map(ejercicios.map((e) => [e.id, e]));
+
+  useEffect(() => {
+    setNombre(editar?.nombre ?? "");
+    setDescripcion(editar?.descripcion ?? "");
+    setLista([...(editar?.ejercicios ?? [])].sort((a, b) => a.orden - b.orden));
+    setSeleccionado("");
+  }, [editar]);
 
   function add() {
     const id = parseInt(seleccionado);
