@@ -25,9 +25,9 @@ export function AppLayout({ children }: { children: ReactNode }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
   return (
-    <div className="min-h-screen w-full bg-background text-foreground">
+    <div className="min-h-screen w-full bg-[#08131c] text-slate-100">
       {/* Desktop sidebar */}
-      <aside className="hidden lg:flex fixed inset-y-0 left-0 w-60 flex-col border-r border-border bg-sidebar">
+      <aside className="hidden lg:flex fixed inset-y-0 left-0 w-60 flex-col border-r border-slate-700 bg-[#07121a]">
         <div className="px-6 py-6">
           <Link to="/" className="inline-flex items-center">
             <img
@@ -63,7 +63,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
       </aside>
 
       {/* Mobile top bar */}
-      <header className="lg:hidden sticky top-0 z-30 flex items-center justify-between border-b border-border bg-background/90 backdrop-blur px-4 py-3">
+      <header className="lg:hidden sticky top-0 z-30 flex items-center justify-between border-b border-slate-700 bg-[#08131c] px-4 py-3">
         <Link to="/" className="inline-flex items-center">
           <img
             src={logoSrc}
@@ -74,12 +74,12 @@ export function AppLayout({ children }: { children: ReactNode }) {
       </header>
 
       {/* Main */}
-      <main className="min-h-screen bg-background lg:pl-60 pb-24 lg:pb-8">
+      <main className="min-h-screen bg-[#08131c] text-slate-100 lg:pl-60 pb-24 lg:pb-8">
         <div className="mx-auto max-w-6xl px-4 sm:px-6 py-6">{children}</div>
       </main>
 
       {/* Mobile bottom nav */}
-      <nav className="lg:hidden fixed bottom-0 inset-x-0 z-40 border-t border-border bg-sidebar/95 backdrop-blur">
+      <nav className="lg:hidden fixed bottom-0 inset-x-0 z-40 border-t border-slate-700 bg-[#07121a]">
         <div className="grid grid-cols-6">
           {nav.map((n) => {
             const active = n.to === "/" ? pathname === "/" : pathname.startsWith(n.to);

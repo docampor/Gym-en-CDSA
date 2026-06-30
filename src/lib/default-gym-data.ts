@@ -176,10 +176,10 @@ export const DEFAULT_ROUTINES = [
     descripcion: "Rutina modelo para probar importacion",
     activa: true,
     ejercicios: [
-      { nombre: "Press de banca", descansoSeg: 120 },
-      { nombre: "Sentadilla", descansoSeg: 150 },
-      { nombre: "Press militar", descansoSeg: 120 },
-      { nombre: "Extensión de tríceps", descansoSeg: 75 },
+      { nombre: "Press de banca", series: 3, repeticiones: 10, pesoKg: 0, descansoSeg: 120 },
+      { nombre: "Sentadilla", series: 3, repeticiones: 10, pesoKg: 0, descansoSeg: 150 },
+      { nombre: "Press militar", series: 3, repeticiones: 10, pesoKg: 0, descansoSeg: 120 },
+      { nombre: "Extensión de tríceps", series: 3, repeticiones: 12, pesoKg: 0, descansoSeg: 75 },
     ],
   },
   {
@@ -187,9 +187,9 @@ export const DEFAULT_ROUTINES = [
     descripcion: "Segunda rutina de ejemplo",
     activa: false,
     ejercicios: [
-      { nombre: "Remo con barra", descansoSeg: 120 },
-      { nombre: "Jalón al pecho", descansoSeg: 90 },
-      { nombre: "Plancha", descansoSeg: 60 },
+      { nombre: "Remo con barra", series: 3, repeticiones: 10, pesoKg: 0, descansoSeg: 120 },
+      { nombre: "Jalón al pecho", series: 3, repeticiones: 10, pesoKg: 0, descansoSeg: 90 },
+      { nombre: "Plancha", series: 3, repeticiones: 1, pesoKg: 0, descansoSeg: 60 },
     ],
   },
   {

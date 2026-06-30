@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useLiveQuery } from "@/lib/hooks";
-import { db, type Rutina } from "@/lib/db";
+import { db, type Ejercicio, type Rutina, type RutinaEjercicio } from "@/lib/db";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -176,6 +176,9 @@ const RUTINAS_HEADERS = [
   "Activa",
   "Orden",
   "Ejercicio",
+  "Series",
+  "Repeticiones",
+  "Peso (kg)",
   "Descanso (seg)",
 ];
 
@@ -233,7 +236,17 @@ function exportarRutinasExcel(
     };
 
     if (rutina.ejercicios.length === 0) {
-      return [{ ...base, Orden: "", Ejercicio: "", "Descanso (seg)": "" }];
+      return [
+        {
+          ...base,
+          Orden: "",
+          Ejercicio: "",
+          Series: "",
+          Repeticiones: "",
+          "Peso (kg)": "",
+          "Descanso (seg)": "",
+        },
+      ];
     }
 
     return [...rutina.ejercicios]
@@ -242,6 +255,9 @@ function exportarRutinasExcel(
         ...base,
         Orden: index + 1,
         Ejercicio: ejercicioMap.get(item.ejercicioId)?.nombre ?? "",
+        Series: item.series ?? 3,
+        Repeticiones: item.repeticiones ?? 10,
+        "Peso (kg)": item.pesoKg ?? 0,
         "Descanso (seg)": item.descansoSeg ?? 90,
       }));
   });
@@ -253,6 +269,9 @@ function exportarRutinasExcel(
     { wch: 10 },
     { wch: 8 },
     { wch: 34 },
+    { wch: 10 },
+    { wch: 15 },
+    { wch: 12 },
     { wch: 14 },
   ];
 
@@ -332,7 +351,15 @@ async function importarRutinasExcel(
         nombre: string;
         descripcion?: string;
         activa?: boolean;
-        ejercicios: { ejercicioKey: string; ejercicioNombre: string; orden: number; descansoSeg: number }[];
+        ejercicios: {
+          ejercicioKey: string;
+          ejercicioNombre: string;
+          orden: number;
+          series: number;
+          repeticiones: number;
+          pesoKg: number;
+          descansoSeg: number;
+        }[];
       }
     >();
     rows.forEach((row, index) => {
@@ -374,8 +401,22 @@ async function importarRutinasExcel(
       }
 
       const orden = numberValue(pick(row, ["Orden"]), grupo.ejercicios.length + 1);
+      const series = Math.max(1, numberValue(pick(row, ["Series", "Serie"]), 3));
+      const repeticiones = Math.max(
+        0,
+        numberValue(pick(row, ["Repeticiones", "Reps", "Repeticion"]), 10),
+      );
+      const pesoKg = Math.max(0, numberValue(pick(row, ["Peso (kg)", "Peso", "Peso kg"]), 0));
       const descansoSeg = numberValue(pick(row, ["Descanso (seg)", "Descanso", "Descanso seg"]), 90);
-      grupo.ejercicios.push({ ejercicioKey, ejercicioNombre: nombreEjercicio, orden, descansoSeg });
+      grupo.ejercicios.push({
+        ejercicioKey,
+        ejercicioNombre: nombreEjercicio,
+        orden,
+        series,
+        repeticiones,
+        pesoKg,
+        descansoSeg,
+      });
       grupos.set(key, grupo);
     });
 
@@ -419,6 +460,9 @@ async function importarRutinasExcel(
           .map((item, index) => ({
             ejercicioId: ejerciciosIdsPorNombre.get(item.ejercicioKey)!,
             orden: index,
+            series: item.series,
+            repeticiones: item.repeticiones,
+            pesoKg: item.pesoKg,
             descansoSeg: item.descansoSeg,
           }));
         const existente = rutinasPorNombre.get(normalizeName(grupo.nombre));
@@ -450,12 +494,12 @@ function RutinaDialog({
   onClose,
 }: {
   editar: Rutina | null;
-  ejercicios: any[];
+  ejercicios: Ejercicio[];
   onClose: () => void;
 }) {
   const [nombre, setNombre] = useState(editar?.nombre ?? "");
   const [descripcion, setDescripcion] = useState(editar?.descripcion ?? "");
-  const [lista, setLista] = useState(editar?.ejercicios ?? []);
+  const [lista, setLista] = useState<RutinaEjercicio[]>(editar?.ejercicios ?? []);
   const [seleccionado, setSeleccionado] = useState<string>("");
 
   const ejMap = new Map(ejercicios.map((e) => [e.id, e]));
@@ -471,7 +515,17 @@ function RutinaDialog({
     const id = parseInt(seleccionado);
     if (!id) return;
     if (lista.some((e) => e.ejercicioId === id)) return toast.error("Ya está agregado");
-    setLista([...lista, { ejercicioId: id, orden: lista.length, descansoSeg: 90 }]);
+    setLista([
+      ...lista,
+      {
+        ejercicioId: id,
+        orden: lista.length,
+        series: 3,
+        repeticiones: 10,
+        pesoKg: 0,
+        descansoSeg: 90,
+      },
+    ]);
     setSeleccionado("");
   }
 
@@ -488,7 +542,7 @@ function RutinaDialog({
   }
 
   return (
-    <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+    <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
       <DialogHeader>
         <DialogTitle>{editar ? "Editar rutina" : "Nueva rutina"}</DialogTitle>
       </DialogHeader>
@@ -507,30 +561,90 @@ function RutinaDialog({
             {lista.map((it, idx) => {
               const ej = ejMap.get(it.ejercicioId);
               return (
-                <div key={idx} className="flex items-center gap-2 rounded-md bg-muted/50 p-2">
-                  <span className="metric-value text-sm w-5 text-muted-foreground">{idx + 1}</span>
-                  <div className="flex-1 min-w-0">
-                    <div className="font-medium truncate">{ej?.nombre ?? "?"}</div>
-                    <div className="text-[11px] text-muted-foreground">{ej?.grupo}</div>
+                <div key={idx} className="rounded-lg border border-slate-700 bg-[#172532] p-3">
+                  <div className="flex items-center gap-2">
+                    <span className="metric-value w-5 text-sm text-slate-400">{idx + 1}</span>
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate font-medium text-slate-100">{ej?.nombre ?? "?"}</div>
+                      <div className="text-[11px] text-cyan-300">{ej?.grupo}</div>
+                    </div>
+                    <Button type="button" size="icon" variant="ghost" title="Subir" onClick={() => mover(idx, -1)}>
+                      <ChevronUp className="h-4 w-4" />
+                    </Button>
+                    <Button type="button" size="icon" variant="ghost" title="Bajar" onClick={() => mover(idx, 1)}>
+                      <ChevronDown className="h-4 w-4" />
+                    </Button>
+                    <Button type="button" size="icon" variant="ghost" title="Quitar" onClick={() => quitar(idx)}>
+                      <X className="h-4 w-4" />
+                    </Button>
                   </div>
-                  <Input
-                    type="number"
-                    className="w-20 h-8"
-                    value={it.descansoSeg ?? 90}
-                    onChange={(e) =>
-                      setLista(lista.map((x, i) => i === idx ? { ...x, descansoSeg: parseInt(e.target.value) || 0 } : x))
-                    }
-                  />
-                  <span className="text-[11px] text-muted-foreground">s</span>
-                  <Button size="icon" variant="ghost" onClick={() => mover(idx, -1)}>
-                    <ChevronUp className="h-4 w-4" />
-                  </Button>
-                  <Button size="icon" variant="ghost" onClick={() => mover(idx, 1)}>
-                    <ChevronDown className="h-4 w-4" />
-                  </Button>
-                  <Button size="icon" variant="ghost" onClick={() => quitar(idx)}>
-                    <X className="h-4 w-4" />
-                  </Button>
+                  <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+                    <div>
+                      <Label className="text-xs text-slate-300">Series</Label>
+                      <Input
+                        type="number"
+                        inputMode="numeric"
+                        min={1}
+                        value={it.series ?? 3}
+                        onChange={(e) =>
+                          setLista(
+                            lista.map((x, i) =>
+                              i === idx ? { ...x, series: Math.max(1, parseInt(e.target.value) || 1) } : x,
+                            ),
+                          )
+                        }
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs text-slate-300">Repeticiones</Label>
+                      <Input
+                        type="number"
+                        inputMode="numeric"
+                        min={0}
+                        value={it.repeticiones ?? 10}
+                        onChange={(e) =>
+                          setLista(
+                            lista.map((x, i) =>
+                              i === idx ? { ...x, repeticiones: Math.max(0, parseInt(e.target.value) || 0) } : x,
+                            ),
+                          )
+                        }
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs text-slate-300">Peso (kg)</Label>
+                      <Input
+                        type="number"
+                        inputMode="decimal"
+                        min={0}
+                        step="0.5"
+                        value={it.pesoKg ?? 0}
+                        onChange={(e) =>
+                          setLista(
+                            lista.map((x, i) =>
+                              i === idx ? { ...x, pesoKg: Math.max(0, parseFloat(e.target.value) || 0) } : x,
+                            ),
+                          )
+                        }
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs text-slate-300">Descanso (s)</Label>
+                      <Input
+                        type="number"
+                        inputMode="numeric"
+                        min={0}
+                        value={it.descansoSeg ?? 90}
+                        onChange={(e) =>
+                          setLista(
+                            lista.map((x, i) =>
+                              i === idx ? { ...x, descansoSeg: Math.max(0, parseInt(e.target.value) || 0) } : x,
+                            ),
+                          )
+                        }
+                      />
+                    </div>
+                  </div>
                 </div>
               );
             })}

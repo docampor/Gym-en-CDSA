@@ -14,6 +14,7 @@ plantilla-rutinas-gym-cdsa*
 !public/plantilla-rutinas-gym-cdsa.xlsx
 dist
 dist-ssr
+/outputs/
 .output
 .vinxi
 .tanstack/**

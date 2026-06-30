@@ -1,4 +1,4 @@
-const CACHE_NAME = "gym-cdsa-v4";
+const CACHE_NAME = "gym-cdsa-v5";
 const BASE_PATH = new URL(self.registration.scope).pathname;
 const APP_SHELL = [
   BASE_PATH,

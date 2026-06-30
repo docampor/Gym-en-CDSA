@@ -80,7 +80,10 @@ function EntrenarPage() {
           r.ejercicios.map((re) => ({
             ejercicioId: re.ejercicioId,
             descansoSeg: re.descansoSeg ?? 90,
-            series: [],
+            series: Array.from({ length: Math.max(1, re.series ?? 3) }, () => ({
+              peso: re.pesoKg ?? 0,
+              reps: re.repeticiones ?? 10,
+            })),
           })),
         );
       }
@@ -305,7 +308,7 @@ function EntrenarPage() {
             )}
             <AgregarEjercicio ejercicios={ejercicios ?? []} onAdd={addEjercicio} />
             <p className="text-xs text-muted-foreground">
-              Al comenzar se muestra una serie por ejercicio para cargar peso, repeticiones,
+              Al comenzar se muestran las series planificadas para cargar peso, repeticiones,
               descanso y observaciones.
             </p>
             <Button onClick={iniciar} className="w-full" size="lg">

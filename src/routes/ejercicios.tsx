@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useLiveQuery } from "@/lib/hooks";
-import { db, GRUPOS_MUSCULARES, type Ejercicio } from "@/lib/db";
+import { db, GRUPOS_MUSCULARES, type Ejercicio, type Serie } from "@/lib/db";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -107,7 +107,8 @@ function EjerciciosPage() {
                 <div className="flex gap-1 shrink-0">
                   <Button
                     size="sm"
-                    variant="outline"
+                    variant="secondary"
+                    className="border border-cyan-300 bg-cyan-300 text-slate-950 shadow-sm hover:bg-cyan-200 hover:text-slate-950"
                     title="Editar ejercicio"
                     aria-label={`Editar ${e.nombre}`}
                     onClick={() => {
@@ -151,7 +152,7 @@ function HistorialEjercicio({ ejercicioId }: { ejercicioId: number }) {
         if (!reg) return null;
         return { fecha: e.fecha, series: reg.series };
       })
-      .filter(Boolean) as { fecha: number; series: any[] }[];
+      .filter(Boolean) as { fecha: number; series: Serie[] }[];
   }, [ejercicioId]);
 
   if (!sesiones || sesiones.length === 0) return null;

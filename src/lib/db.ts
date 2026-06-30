@@ -12,6 +12,9 @@ export type Ejercicio = {
 export type RutinaEjercicio = {
   ejercicioId: number;
   orden: number;
+  series?: number;
+  repeticiones?: number;
+  pesoKg?: number;
   descansoSeg?: number;
 };
 
@@ -157,6 +160,9 @@ export async function ensureDefaultGymData() {
           ejercicios: routine.ejercicios.map((exercise, index) => ({
             ejercicioId: exerciseIds.get(exercise.nombre)!,
             orden: index,
+            series: exercise.series,
+            repeticiones: exercise.repeticiones,
+            pesoKg: exercise.pesoKg,
             descansoSeg: exercise.descansoSeg,
           })),
         });
