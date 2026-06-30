@@ -1,4 +1,5 @@
 import Dexie, { type Table } from "dexie";
+import { DEFAULT_EXERCISES, DEFAULT_ROUTINE } from "./default-gym-data";
 
 export type Ejercicio = {
   id?: number;
@@ -124,6 +125,44 @@ class GymDB extends Dexie {
 }
 
 export const db = new GymDB();
+
+const DEFAULT_DATA_SEED_KEY = "default-gym-data-2026-06-30";
+
+export async function ensureDefaultGymData() {
+  await db.transaction("rw", [db.ejercicios, db.rutinas, db.ajustes], async () => {
+    const alreadyChecked = await db.ajustes.get(DEFAULT_DATA_SEED_KEY);
+    if (alreadyChecked) return;
+
+    const [exerciseCount, routineCount] = await Promise.all([
+      db.ejercicios.count(),
+      db.rutinas.count(),
+    ]);
+
+    if (exerciseCount === 0 && routineCount === 0) {
+      const createdAt = Date.now();
+      const exerciseIds = new Map<string, number>();
+
+      for (const exercise of DEFAULT_EXERCISES) {
+        const id = await db.ejercicios.add({ ...exercise, creadoEn: createdAt });
+        exerciseIds.set(exercise.nombre, id);
+      }
+
+      await db.rutinas.add({
+        nombre: DEFAULT_ROUTINE.nombre,
+        descripcion: DEFAULT_ROUTINE.descripcion,
+        activa: DEFAULT_ROUTINE.activa,
+        creadaEn: createdAt,
+        ejercicios: DEFAULT_ROUTINE.ejercicios.map((exercise, index) => ({
+          ejercicioId: exerciseIds.get(exercise.nombre)!,
+          orden: index,
+          descansoSeg: exercise.descansoSeg,
+        })),
+      });
+    }
+
+    await db.ajustes.put({ clave: DEFAULT_DATA_SEED_KEY, valor: true });
+  });
+}
 
 export async function getAjuste<T = unknown>(clave: string, def: T): Promise<T> {
   const a = await db.ajustes.get(clave);

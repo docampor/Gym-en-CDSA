@@ -12,6 +12,7 @@ import { Toaster } from "@/components/ui/sonner";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { AppLayout } from "@/components/AppLayout";
+import { ensureDefaultGymData } from "@/lib/db";
 
 function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   console.error(error);
@@ -117,6 +118,12 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+
+  useEffect(() => {
+    ensureDefaultGymData().catch((error) =>
+      console.error("No se pudieron cargar los datos iniciales", error),
+    );
+  }, []);
 
   useEffect(() => {
     if (!("serviceWorker" in navigator)) return;
