@@ -84,9 +84,9 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     ],
     links: [
       { rel: "stylesheet", href: appCss },
-      { rel: "manifest", href: "/manifest.webmanifest" },
-      { rel: "icon", href: "/icon-192.png", type: "image/png" },
-      { rel: "apple-touch-icon", href: "/icon-192.png" },
+      { rel: "manifest", href: `${import.meta.env.BASE_URL}manifest.webmanifest` },
+      { rel: "icon", href: `${import.meta.env.BASE_URL}icon-192.png`, type: "image/png" },
+      { rel: "apple-touch-icon", href: `${import.meta.env.BASE_URL}apple-touch-icon.png` },
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       {
@@ -117,6 +117,27 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+
+  useEffect(() => {
+    if (!("serviceWorker" in navigator)) return;
+
+    const registerServiceWorker = () => {
+      navigator.serviceWorker
+        .register(`${import.meta.env.BASE_URL}sw.js`, {
+          scope: import.meta.env.BASE_URL,
+        })
+        .catch((error) => console.error("No se pudo activar el modo instalable", error));
+    };
+
+    if (document.readyState === "complete") {
+      registerServiceWorker();
+      return;
+    }
+
+    window.addEventListener("load", registerServiceWorker, { once: true });
+    return () => window.removeEventListener("load", registerServiceWorker);
+  }, []);
+
   return (
     <QueryClientProvider client={queryClient}>
       <AppLayout>
