@@ -11,6 +11,7 @@ node_modules
 .npm-cache/
 package-lock.json
 plantilla-rutinas-gym-cdsa*
+!public/plantilla-rutinas-gym-cdsa.xlsx
 dist
 dist-ssr
 .output

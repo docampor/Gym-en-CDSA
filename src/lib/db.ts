@@ -1,5 +1,5 @@
 import Dexie, { type Table } from "dexie";
-import { DEFAULT_EXERCISES, DEFAULT_ROUTINE } from "./default-gym-data";
+import { DEFAULT_EXERCISES, DEFAULT_ROUTINES } from "./default-gym-data";
 
 export type Ejercicio = {
   id?: number;
@@ -126,7 +126,7 @@ class GymDB extends Dexie {
 
 export const db = new GymDB();
 
-const DEFAULT_DATA_SEED_KEY = "default-gym-data-2026-06-30";
+const DEFAULT_DATA_SEED_KEY = "default-gym-data-template-v2";
 
 export async function ensureDefaultGymData() {
   await db.transaction("rw", [db.ejercicios, db.rutinas, db.ajustes], async () => {
@@ -147,17 +147,19 @@ export async function ensureDefaultGymData() {
         exerciseIds.set(exercise.nombre, id);
       }
 
-      await db.rutinas.add({
-        nombre: DEFAULT_ROUTINE.nombre,
-        descripcion: DEFAULT_ROUTINE.descripcion,
-        activa: DEFAULT_ROUTINE.activa,
-        creadaEn: createdAt,
-        ejercicios: DEFAULT_ROUTINE.ejercicios.map((exercise, index) => ({
-          ejercicioId: exerciseIds.get(exercise.nombre)!,
-          orden: index,
-          descansoSeg: exercise.descansoSeg,
-        })),
-      });
+      for (const routine of DEFAULT_ROUTINES) {
+        await db.rutinas.add({
+          nombre: routine.nombre,
+          descripcion: routine.descripcion,
+          activa: routine.activa,
+          creadaEn: createdAt,
+          ejercicios: routine.ejercicios.map((exercise, index) => ({
+            ejercicioId: exerciseIds.get(exercise.nombre)!,
+            orden: index,
+            descansoSeg: exercise.descansoSeg,
+          })),
+        });
+      }
     }
 
     await db.ajustes.put({ clave: DEFAULT_DATA_SEED_KEY, valor: true });
@@ -279,5 +281,6 @@ export const GRUPOS_MUSCULARES = [
   "Pantorrilla",
   "Core",
   "Cardio",
+  "Piernas",
   "Otro",
 ];

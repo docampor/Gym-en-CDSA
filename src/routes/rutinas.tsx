@@ -14,7 +14,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Plus, Pencil, Trash2, ListChecks, Star, ChevronUp, ChevronDown, X, Play, Download, Upload } from "lucide-react";
+import { Plus, Pencil, Trash2, ListChecks, Star, ChevronUp, ChevronDown, X, Play, Download, Upload, FileSpreadsheet } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import * as XLSX from "xlsx";
@@ -50,12 +50,20 @@ function RutinasPage() {
           <p className="text-sm text-muted-foreground">Organizá tus planes de entrenamiento</p>
         </div>
         <div className="flex flex-wrap gap-2">
+          <Button asChild type="button" variant="secondary">
+            <a
+              href={`${import.meta.env.BASE_URL}plantilla-rutinas-gym-cdsa.xlsx`}
+              download="plantilla-rutinas-gym-cdsa.xlsx"
+            >
+              <FileSpreadsheet className="h-4 w-4 mr-1" /> Plantilla
+            </a>
+          </Button>
           <Button
             type="button"
             variant="secondary"
             onClick={() => exportarRutinasExcel(rutinasActuales, ejerciciosActuales)}
           >
-            <Download className="h-4 w-4 mr-1" /> Excel
+            <Download className="h-4 w-4 mr-1" /> Exportar
           </Button>
           <Button type="button" variant="secondary" onClick={() => fileRef.current?.click()}>
             <Upload className="h-4 w-4 mr-1" /> Importar
@@ -337,17 +345,6 @@ async function importarRutinasExcel(
         errores.push(`Fila ${fila}: falta la rutina`);
         return;
       }
-      if (!nombreEjercicio) {
-        errores.push(`Fila ${fila}: falta el ejercicio`);
-        return;
-      }
-
-      const ejercicio = ejerciciosPorNombre.get(normalizeName(nombreEjercicio));
-      const ejercicioKey = normalizeName(nombreEjercicio);
-      if (!ejercicio) {
-        errores.push(`Fila ${fila}: "${nombreEjercicio}" no existe en la app ni en la hoja de ejercicios`);
-        return;
-      }
 
       const key = normalizeName(nombreRutina);
       const grupo = grupos.get(key) ?? {
@@ -356,6 +353,20 @@ async function importarRutinasExcel(
         activa: boolValue(pick(row, ["Activa", "Activo"])),
         ejercicios: [],
       };
+      grupo.descripcion ||= textValue(pick(row, ["Descripcion"]));
+      grupo.activa ||= boolValue(pick(row, ["Activa", "Activo"]));
+      grupos.set(key, grupo);
+
+      // Una fila con nombre y sin ejercicio representa una rutina vacía válida.
+      if (!nombreEjercicio) return;
+
+      const ejercicio = ejerciciosPorNombre.get(normalizeName(nombreEjercicio));
+      const ejercicioKey = normalizeName(nombreEjercicio);
+      if (!ejercicio) {
+        errores.push(`Fila ${fila}: "${nombreEjercicio}" no existe en la app ni en la hoja de ejercicios`);
+        return;
+      }
+
       const duplicado = grupo.ejercicios.some((item) => item.ejercicioKey === ejercicioKey);
       if (duplicado) {
         errores.push(`Fila ${fila}: "${nombreEjercicio}" esta repetido en "${nombreRutina}"`);
@@ -364,8 +375,6 @@ async function importarRutinasExcel(
 
       const orden = numberValue(pick(row, ["Orden"]), grupo.ejercicios.length + 1);
       const descansoSeg = numberValue(pick(row, ["Descanso (seg)", "Descanso", "Descanso seg"]), 90);
-      grupo.descripcion ||= textValue(pick(row, ["Descripcion"]));
-      grupo.activa ||= boolValue(pick(row, ["Activa", "Activo"]));
       grupo.ejercicios.push({ ejercicioKey, ejercicioNombre: nombreEjercicio, orden, descansoSeg });
       grupos.set(key, grupo);
     });

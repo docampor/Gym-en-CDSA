@@ -1,4 +1,4 @@
-const CACHE_NAME = "gym-cdsa-v2";
+const CACHE_NAME = "gym-cdsa-v3";
 const BASE_PATH = new URL(self.registration.scope).pathname;
 const APP_SHELL = [
   BASE_PATH,
@@ -6,6 +6,7 @@ const APP_SHELL = [
   `${BASE_PATH}icon-192.png?v=2`,
   `${BASE_PATH}icon-512.png?v=2`,
   `${BASE_PATH}apple-touch-icon.png?v=2`,
+  `${BASE_PATH}plantilla-rutinas-gym-cdsa.xlsx`,
 ];
 
 self.addEventListener("install", (event) => {
