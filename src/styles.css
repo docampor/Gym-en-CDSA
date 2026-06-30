@@ -48,43 +48,44 @@
   --font-display: "Rajdhani", "Inter", system-ui, sans-serif;
 }
 
-/* Dark by default (Garmin-inspired: deep navy + cyan) */
+/* Dark by default. Hex colors keep the theme compatible with older mobile WebViews. */
 :root, .dark {
   --radius: 0.75rem;
-  --background: oklch(0.16 0.02 240);
-  --foreground: oklch(0.97 0.01 240);
-  --card: oklch(0.21 0.025 240);
-  --card-foreground: oklch(0.97 0.01 240);
-  --popover: oklch(0.21 0.025 240);
-  --popover-foreground: oklch(0.97 0.01 240);
-  --primary: oklch(0.78 0.16 195);
-  --primary-foreground: oklch(0.15 0.02 240);
-  --secondary: oklch(0.28 0.03 240);
-  --secondary-foreground: oklch(0.97 0.01 240);
-  --muted: oklch(0.25 0.025 240);
-  --muted-foreground: oklch(0.68 0.02 240);
-  --accent: oklch(0.32 0.05 220);
-  --accent-foreground: oklch(0.97 0.01 240);
-  --destructive: oklch(0.62 0.22 25);
-  --destructive-foreground: oklch(0.98 0 0);
-  --success: oklch(0.72 0.17 155);
-  --warning: oklch(0.78 0.17 70);
-  --border: oklch(0.3 0.025 240);
-  --input: oklch(0.3 0.025 240);
-  --ring: oklch(0.78 0.16 195);
-  --chart-1: oklch(0.78 0.16 195);
-  --chart-2: oklch(0.72 0.17 155);
-  --chart-3: oklch(0.78 0.17 70);
-  --chart-4: oklch(0.7 0.2 25);
-  --chart-5: oklch(0.65 0.2 300);
-  --sidebar: oklch(0.19 0.02 240);
-  --sidebar-foreground: oklch(0.97 0.01 240);
-  --sidebar-primary: oklch(0.78 0.16 195);
-  --sidebar-primary-foreground: oklch(0.15 0.02 240);
-  --sidebar-accent: oklch(0.25 0.03 240);
-  --sidebar-accent-foreground: oklch(0.97 0.01 240);
-  --sidebar-border: oklch(0.3 0.025 240);
-  --sidebar-ring: oklch(0.78 0.16 195);
+  --background: #08131c;
+  --foreground: #f5f8fb;
+  --card: #111f2b;
+  --card-foreground: #f5f8fb;
+  --popover: #172532;
+  --popover-foreground: #f5f8fb;
+  --primary: #16cbd1;
+  --primary-foreground: #061419;
+  --secondary: #203140;
+  --secondary-foreground: #f5f8fb;
+  --muted: #1a2a37;
+  --muted-foreground: #a7b6c4;
+  --accent: #294457;
+  --accent-foreground: #f8fbfd;
+  --destructive: #e35d54;
+  --destructive-foreground: #ffffff;
+  --success: #4fca83;
+  --warning: #efb64b;
+  --border: #344958;
+  --input: #526675;
+  --ring: #16cbd1;
+  --chart-1: #16cbd1;
+  --chart-2: #4fca83;
+  --chart-3: #efb64b;
+  --chart-4: #ef755f;
+  --chart-5: #a979e8;
+  --sidebar: #07121a;
+  --sidebar-foreground: #f5f8fb;
+  --sidebar-primary: #16cbd1;
+  --sidebar-primary-foreground: #061419;
+  --sidebar-accent: #1a2b38;
+  --sidebar-accent-foreground: #f5f8fb;
+  --sidebar-border: #304553;
+  --sidebar-ring: #16cbd1;
+  color-scheme: dark;
 }
 
 @layer base {
@@ -93,8 +94,8 @@
   }
   html, body, #root {
     min-height: 100%;
-    background-color: var(--background);
-    color: var(--foreground);
+    background-color: #08131c;
+    color: #f5f8fb;
     -webkit-font-smoothing: antialiased;
   }
   body {

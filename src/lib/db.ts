@@ -32,6 +32,7 @@ export type Serie = {
 
 export type RegistroEjercicio = {
   ejercicioId: number;
+  descansoSeg?: number;
   series: Serie[];
 };
 

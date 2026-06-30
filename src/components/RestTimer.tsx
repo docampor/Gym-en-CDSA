@@ -34,6 +34,12 @@ export function RestTimer({
   const ref = useRef<number | null>(null);
 
   useEffect(() => {
+    setDuration(defaultSeconds);
+    setRemaining(defaultSeconds);
+    setRunning(false);
+  }, [defaultSeconds]);
+
+  useEffect(() => {
     setRemaining(duration);
   }, [duration]);
 

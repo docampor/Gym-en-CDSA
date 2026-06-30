@@ -106,18 +106,22 @@ function EjerciciosPage() {
                 </div>
                 <div className="flex gap-1 shrink-0">
                   <Button
-                    size="icon"
-                    variant="ghost"
+                    size="sm"
+                    variant="outline"
+                    title="Editar ejercicio"
+                    aria-label={`Editar ${e.nombre}`}
                     onClick={() => {
                       setEditar(e);
                       setAbierto(true);
                     }}
                   >
-                    <Pencil className="h-4 w-4" />
+                    <Pencil className="mr-1 h-4 w-4" /> Editar
                   </Button>
                   <Button
                     size="icon"
                     variant="ghost"
+                    title="Eliminar ejercicio"
+                    aria-label={`Eliminar ${e.nombre}`}
                     onClick={async () => {
                       if (confirm(`¿Eliminar "${e.nombre}"?`)) {
                         await db.ejercicios.delete(e.id!);

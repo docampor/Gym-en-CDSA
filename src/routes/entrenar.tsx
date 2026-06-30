@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Plus, Trash2, Check, X, Dumbbell, Bike, Waves } from "lucide-react";
+import { Plus, Trash2, Check, X, Dumbbell, Bike, Waves, ArrowLeft, Timer } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -76,7 +76,13 @@ function EntrenarPage() {
     if (!iniciado && rutinaSelId && rutinas) {
       const r = rutinas.find((x) => x.id === rutinaSelId);
       if (r) {
-        setRegistros(r.ejercicios.map((re) => ({ ejercicioId: re.ejercicioId, series: [] })));
+        setRegistros(
+          r.ejercicios.map((re) => ({
+            ejercicioId: re.ejercicioId,
+            descansoSeg: re.descansoSeg ?? 90,
+            series: [],
+          })),
+        );
       }
     }
   }, [rutinaSelId, rutinas, iniciado]);
@@ -93,7 +99,24 @@ function EntrenarPage() {
     if (registros.length === 0) {
       return toast.error("Seleccioná una rutina o agregá ejercicios");
     }
+    setRegistros((actuales) =>
+      actuales.map((registro) => ({
+        ...registro,
+        descansoSeg: registro.descansoSeg ?? descansoActual,
+        series: registro.series.length > 0 ? registro.series : [{ peso: 0, reps: 0 }],
+      })),
+    );
     setIniciado(true);
+  }
+
+  function cerrarEntrenamiento() {
+    const tieneDatos = registros.some((registro) =>
+      registro.series.some(
+        (serie) => serie.peso > 0 || serie.reps > 0 || Boolean(serie.observaciones?.trim()),
+      ),
+    );
+    if (iniciado && tieneDatos && !confirm("¿Cerrar sin guardar este entrenamiento?")) return;
+    navigate({ to: "/" });
   }
 
   async function guardarNatacion() {
@@ -147,6 +170,7 @@ function EntrenarPage() {
     const r = [...registros];
     const last = r[idx].series[r[idx].series.length - 1];
     r[idx].series.push({ peso: last?.peso ?? 0, reps: last?.reps ?? 0 });
+    setDescansoActual(r[idx].descansoSeg ?? descansoActual);
     setRegistros(r);
   }
 
@@ -164,7 +188,20 @@ function EntrenarPage() {
 
   function addEjercicio(id: number) {
     if (registros.some((r) => r.ejercicioId === id)) return toast.error("Ya está agregado");
-    setRegistros([...registros, { ejercicioId: id, series: [] }]);
+    setRegistros([
+      ...registros,
+      {
+        ejercicioId: id,
+        descansoSeg: descansoActual,
+        series: iniciado ? [{ peso: 0, reps: 0 }] : [],
+      },
+    ]);
+  }
+
+  function actualizarDescanso(idx: number, descansoSeg: number) {
+    setRegistros(
+      registros.map((registro, index) => (index === idx ? { ...registro, descansoSeg } : registro)),
+    );
   }
 
   function quitarEjercicio(idx: number) {
@@ -194,13 +231,18 @@ function EntrenarPage() {
   if (!iniciado) {
     return (
       <div className="space-y-4 max-w-lg mx-auto">
-        <div>
-          <h1 className="text-2xl font-bold">
-            {tipo === "gimnasio" ? "Iniciar entrenamiento" : "Registrar actividad"}
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            Elegí una rutina o registrá ejercicios sueltos
-          </p>
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <h1 className="text-2xl font-bold">
+              {tipo === "gimnasio" ? "Iniciar entrenamiento" : "Registrar actividad"}
+            </h1>
+            <p className="text-sm text-muted-foreground">
+              Elegí una rutina o registrá ejercicios sueltos
+            </p>
+          </div>
+          <Button type="button" variant="outline" onClick={cerrarEntrenamiento}>
+            <ArrowLeft className="mr-1 h-4 w-4" /> Cerrar
+          </Button>
         </div>
         <ActivityTypeSelector value={tipo} onChange={setTipo} />
         {tipo === "gimnasio" ? (
@@ -246,8 +288,13 @@ function EntrenarPage() {
                 </div>
                 <ul className="text-sm space-y-1">
                   {registros.map((r, i) => (
-                    <li key={i} className="flex items-center justify-between">
-                      <span>{ejMap.get(r.ejercicioId)?.nombre ?? "?"}</span>
+                    <li key={i} className="flex items-center justify-between gap-2">
+                      <span>
+                        {ejMap.get(r.ejercicioId)?.nombre ?? "?"}
+                        <small className="ml-2 text-muted-foreground">
+                          Descanso: {r.descansoSeg ?? descansoActual} s
+                        </small>
+                      </span>
                       <Button size="icon" variant="ghost" onClick={() => quitarEjercicio(i)}>
                         <X className="h-4 w-4" />
                       </Button>
@@ -257,6 +304,10 @@ function EntrenarPage() {
               </div>
             )}
             <AgregarEjercicio ejercicios={ejercicios ?? []} onAdd={addEjercicio} />
+            <p className="text-xs text-muted-foreground">
+              Al comenzar se muestra una serie por ejercicio para cargar peso, repeticiones,
+              descanso y observaciones.
+            </p>
             <Button onClick={iniciar} className="w-full" size="lg">
               <Dumbbell className="h-4 w-4 mr-1" /> Comenzar
             </Button>
@@ -461,9 +512,14 @@ function EntrenarPage() {
             {rutinas?.find((r) => r.id === rutinaSelId)?.nombre ?? "Sesión libre"}
           </p>
         </div>
-        <Button onClick={guardar}>
-          <Check className="h-4 w-4 mr-1" /> Finalizar
-        </Button>
+        <div className="flex gap-2">
+          <Button type="button" variant="outline" onClick={cerrarEntrenamiento}>
+            <X className="mr-1 h-4 w-4" /> Cerrar
+          </Button>
+          <Button onClick={guardar}>
+            <Check className="h-4 w-4 mr-1" /> Finalizar
+          </Button>
+        </div>
       </div>
 
       <RestTimer defaultSeconds={descansoActual} />
@@ -479,6 +535,29 @@ function EntrenarPage() {
               </div>
               <Button size="icon" variant="ghost" onClick={() => quitarEjercicio(ri)}>
                 <Trash2 className="h-4 w-4" />
+              </Button>
+            </div>
+            <div className="mb-3 flex flex-wrap items-center gap-2 rounded-lg border border-border bg-muted/40 p-2">
+              <Timer className="h-4 w-4 text-primary" />
+              <Label className="text-xs">Descanso entre series</Label>
+              <Input
+                type="number"
+                inputMode="numeric"
+                min={0}
+                value={r.descansoSeg ?? descansoActual}
+                onChange={(e) => actualizarDescanso(ri, Math.max(0, parseInt(e.target.value) || 0))}
+                className="h-8 w-24"
+                aria-label={`Descanso para ${ej?.nombre ?? "ejercicio"}`}
+              />
+              <span className="text-xs text-muted-foreground">segundos</span>
+              <Button
+                type="button"
+                size="sm"
+                variant="secondary"
+                className="ml-auto"
+                onClick={() => setDescansoActual(r.descansoSeg ?? 90)}
+              >
+                Usar en temporizador
               </Button>
             </div>
             <div className="grid grid-cols-[24px_1fr_1fr_1fr_32px] gap-2 items-center text-[11px] uppercase tracking-wider text-muted-foreground mb-1">
